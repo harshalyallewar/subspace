@@ -2,12 +2,11 @@ const express = require("express");
 const axios = require("axios");
 const _ = require("lodash");
 const app = express();
-require("dotenv").config();
+const { BLOG_API, SECRET } = require("./variables"); // Change the path as needed
 
 app.get("/api/blog-stats", async (req, res, next) => {
   try {
     req.blogData = await fetchPosts();
-    console.log(req.blogData);
     next();
   } catch (err) {
     res
@@ -16,11 +15,10 @@ app.get("/api/blog-stats", async (req, res, next) => {
   }
 });
 
-
 app.use("/api/blog-stats", (req, res, next) => {
   try {
     const articles = req.blogData.blogs;
-    
+
     const totalArticles = _.size(articles);
     const longestTitle = _.maxBy(articles, (item) => item.title.length).title;
     const privacyCount = _.filter(articles, (item) =>
@@ -35,8 +33,11 @@ app.use("/api/blog-stats", (req, res, next) => {
       privacyCount,
       uniqueTitles,
     };
-    
-    res.status(200).json({ success: true, message: "Successfully analyzed blog data" });
+    res.status(200).json({
+      success: true,
+      message: "Successfully analyzed blog data",
+      data: req.stats,
+    });
   } catch (err) {
     res
       .status(500)
@@ -66,7 +67,6 @@ app.use((err, req, res, next) => {
     .status(500)
     .json({ success: false, message: `Server error: ${err.message}` });
 });
-
 
 const fetchPosts = _.memoize(async () => {
   const { data } = await axios.get(BLOG_API, {
